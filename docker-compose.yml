@@ -38,7 +38,9 @@ services:
       - mysql
     restart: always
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:5000/health || exit 1"]
+      # python:3.11-slim ships no curl, so probe using the interpreter that is
+      # guaranteed to be present. /health is a liveness check and returns 200.
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:5000/health', timeout=3).status == 200 else 1)\""]
       interval: 10s
       timeout: 5s
       retries: 5
