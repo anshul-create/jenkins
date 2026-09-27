@@ -1,8 +1,11 @@
-from fastapi import FastAPI, Depends
-from sqlalchemy import text
-from sqlalchemy.orm import Session
+import logging
+
+from fastapi import FastAPI, HTTPException
+from sqlalchemy import create_engine, text
 
 from config import DATABASE_URL
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="AWS CI/CD Application")
 
@@ -29,12 +32,16 @@ def db_health():
         with engine.connect() as connection:
             connection.execute(text("SELECT 1"))
 
-        return {
-            "database": "connected"
-        }
+    except Exception:
+        logger.exception("Database health check failed")
+        raise HTTPException(status_code=503, detail="database unavailable")
 
-    except Exception as e:
-        return {
-            "database": "disconnected",
-            "error": str(e)
-        }
+    return {
+        "database": "connected"
+    }
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(app, host="0.0.0.0", port=5000)
